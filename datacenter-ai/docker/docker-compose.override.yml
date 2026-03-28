@@ -1,0 +1,30 @@
+# Docker Compose Override — local development with hot-reload
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.override.yml up
+# This extends docker-compose.yml with local dev settings (DO NOT use in production)
+
+version: "3.9"
+
+services:
+  backend:
+    volumes:
+      # Mount source for hot-reload — changes to Python files restart uvicorn automatically
+      - ../backend:/app
+      # Read-only ML artifacts (protect trained models from accidental overwrite)
+      - ../ml/artifacts:/app/ml/artifacts:ro
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    environment:
+      - DEBUG=true
+      - LOG_LEVEL=info
+
+  frontend:
+    volumes:
+      # Mount frontend source for hot-reload via Vite HMR
+      - ../frontend:/app
+      # Keep node_modules from being replaced by the volume mount
+      - /app/node_modules
+    environment:
+      - WATCHPACK_POLLING=true
+
+  nginx:
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro

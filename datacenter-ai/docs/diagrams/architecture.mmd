@@ -1,0 +1,135 @@
+# Data Center AI — Component Architecture
+
+```mermaid
+componentDiagram
+    direction TB
+
+    %% External Sources
+    class "Kaggle Datasets" as Kaggle {
+        hot_corridor.csv
+        cooling_control.csv
+    }
+
+    %% ML Layer
+    class "ml_service.py" as MLService {
+        +load_models()
+        +run_inference()
+        +run_whatif()
+        +run_drift_check()
+    }
+
+    class "isolation_forest.py" as IF {
+        +score(features)
+        +normalise_if_score()
+    }
+
+    class "forecaster.py" as Prophet {
+        +predict(device_id, history)
+        +whatif_forecast()
+    }
+
+    class "risk_scorer.py" as RiskScorer {
+        +score(...arrays)
+        +normalise_if_score()
+        +compute_forecast_deviation()
+    }
+
+    class "drift_monitor.py" as DriftMonitor {
+        +check(live_data)
+    }
+
+    %% Backend Services
+    class "simulator.py" as Simulator {
+        +start()
+        +_synthetic_reading()
+        +load_csv()
+    }
+
+    class "persistence_consumer.py" as PersistenceConsumer {
+        +on_sensor_event()
+    }
+
+    class "ml_consumer.py" as MLConsumer {
+        +trigger_inference()
+    }
+
+    class "alert_consumer.py" as AlertConsumer {
+        +on_device_risk()
+    }
+
+    class "work_order_service.py" as WorkOrderService {
+        +create_from_alert()
+        +update_step()
+        +complete()
+    }
+
+    class "kpi_service.py" as KPIService {
+        +snapshot()
+        +compute_pue()
+        +compute_cost_savings()
+    }
+
+    %% Event Bus
+    class "event_bus.py" as EventBus {
+        +publish(event)
+        +subscribe(type, handler)
+        +start()
+        +stop()
+    }
+
+    %% Database
+    class "SQLite (SQLAlchemy)" as DB {
+        devices
+        sensor_readings
+        anomaly_alerts
+        work_orders
+        audit_log
+        kpi_snapshots
+    }
+
+    %% FastAPI
+    class "FastAPI App" as API {
+        /api/v1/health
+        /api/v1/devices
+        /api/v1/sensors/latest
+        /api/v1/alerts
+        /api/v1/work-orders
+        /api/v1/kpis
+        /api/v1/simulation/what-if
+        /api/v1/audit-log
+        /api/v1/demo/inject-anomaly
+        /ws/sensors
+    }
+
+    %% Frontend
+    class "React Frontend" as Frontend {
+        Overview Page
+        Anomalies Page
+        Actions Page
+    }
+
+    %% Data flows
+    Kaggle --> MLService : raw CSV files
+    Kaggle --> Simulator : hot_corridor.csv
+
+    EventBus ..> Simulator : sensor events
+    EventBus ..> PersistenceConsumer : sensor events
+    EventBus ..> MLConsumer : triggers
+    EventBus ..> AlertConsumer : risk events
+
+    PersistenceConsumer --> DB : writes sensor readings
+    MLConsumer --> MLService : triggers inference
+    MLService --> IF : IsolationForest inference
+    MLService --> Prophet : Prophet inference
+    MLService --> RiskScorer : ensemble scoring
+    MLService --> DriftMonitor : drift check
+
+    AlertConsumer --> WorkOrderService : alert accepted
+    AlertConsumer --> API : alert triggered (WebSocket)
+    WorkOrderService --> DB : read/write work_orders
+    KPIService --> DB : read sensors, write snapshots
+
+    API --> DB : REST queries
+    API <--> Frontend : HTTP + WebSocket
+    Frontend --> EventBus : WebSocket subscription
+```

@@ -1,0 +1,17 @@
+{
+  "id": "beastayyg/data-center-ai-training-pipeline",
+  "title": "Data Center AI Training Pipeline",
+  "code_file": "datacenter-ai-training.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": true,
+  "enable_gpu": false,
+  "enable_internet": true,
+  "dataset_sources": [
+    "mbjunior/data-centre-hot-corridor-temperature-prediction",
+    "programmer3/data-center-cold-source-control-dataset"
+  ],
+  "competition_sources": [],
+  "kernel_sources": [],
+  "model_sources": []
+}

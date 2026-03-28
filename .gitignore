@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+*.class
+*.so
+.Python
+*.egg-info/
+*.egg
+dist/
+build/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+
+# Environment & secrets — NEVER commit real .env files
+.env
+.env.*
+!.env.example
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Node (frontend)
+node_modules/
+datacenter-ai/frontend/node_modules/
+
+# Build outputs
+datacenter-ai/frontend/dist/
+datacenter-ai/frontend/build/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+.verdent/
+
+# ML artifacts — train your own and mount at runtime
+datacenter-ai/ml/artifacts/*.joblib
+datacenter-ai/ml/artifacts/*.pkl
+datacenter-ai/ml/artifacts/*.h5
+
+# Raw data (optional: use git-lfs for these if you want to upload them)
+# datacenter-ai/ml/data/raw/*.csv
+# datacenter-ai/ml/data/processed/*.csv

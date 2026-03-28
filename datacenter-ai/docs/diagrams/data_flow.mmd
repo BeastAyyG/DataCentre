@@ -1,0 +1,62 @@
+# Data Center AI — Data Flow (Sensor to UI)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant S as Simulator (simulator.py)
+    participant EB as EventBus (event_bus.py)
+    participant PC as PersistenceConsumer
+    participant DB as SQLite
+    participant ML as MLConsumer
+    participant SR as RiskScorer
+    participant AC as AlertConsumer
+    participant WS as WebSocket
+    participant UI as React Frontend
+
+    Note over S, EB: STEP 1 — Sensor Data Generation
+
+    S->>S: _synthetic_reading(device)
+    Note right of S: Generates temp, power, airflow,<br/>CPU util, humidity, PUE every 2s<br/>(or replays Kaggle CSV if available)
+
+    S->>EB: SensorEvent(device_id, reading)
+    par Parallel fan-out
+        EB->>PC: on_sensor_event(event)
+        EB->>WS: broadcast event
+    end
+
+    Note over PC, DB: STEP 2 — Persistence
+
+    PC->>DB: SensorReading INSERT
+    Note right of DB: Stored with device_id,<br/>timestamp, all 9 sensor fields
+
+    Note over ML, SR: STEP 3 — ML Inference (every 30s scheduler)
+
+    ML->>DB: Load latest readings for all devices
+    ML->>SR: score(anomaly_scores, temps, forecast_upper, ...)
+    SR-->>ML: [{risk_score, risk_label, contributing_factors}, ...]
+    ML->>ML: update Device.current_risk_score in DB
+    ML->>EB: DeviceRiskEvent per device
+
+    Note over EB, AC: STEP 4 — Alert Generation
+
+    alt risk_label = at_risk or critical
+        EB->>AC: on_device_risk(event)
+        AC->>DB: INSERT AnomalyAlert (or UPDATE if exists)
+        AC->>EB: AlertTriggeredEvent
+        EB->>WS: broadcast alert
+    end
+
+    Note over WS, UI: STEP 5 — Real-time UI Update
+
+    WS->>UI: WebSocket message (sensor_update or alert_triggered)
+    UI->>UI: useSensorStore.updateReading()<br/>or useAlertStore.addAlert()
+    UI->>UI: React re-renders topology, KPI strip
+
+    Note over UI: STEP 6 — Operator Action (Human-in-the-Loop)
+
+    UI->>API: POST /alerts/{id}/accept
+    API->>DB: UPDATE alert status<br/>INSERT WorkOrder
+    API->>DB: INSERT AuditLog
+    API-->>UI: { work_order, alert }
+    UI->>UI: toast.success("Work order created!")
+```

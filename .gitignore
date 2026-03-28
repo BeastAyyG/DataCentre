@@ -41,10 +41,10 @@ datacenter-ai/frontend/build/
 Thumbs.db
 .verdent/
 
-# ML artifacts — train your own and mount at runtime
-datacenter-ai/ml/artifacts/*.joblib
-datacenter-ai/ml/artifacts/*.pkl
-datacenter-ai/ml/artifacts/*.h5
+# ML artifacts (optional: these are included for cross-computer work)
+# datacenter-ai/ml/artifacts/*.joblib
+# datacenter-ai/ml/artifacts/*.pkl
+# datacenter-ai/ml/artifacts/*.h5
 
 # Raw data (optional: use git-lfs for these if you want to upload them)
 # datacenter-ai/ml/data/raw/*.csv

@@ -1,6 +1,25 @@
 version: "3.9"
 
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: dc-ai-postgres
+    environment:
+      POSTGRES_USER: dcadmin
+      POSTGRES_PASSWORD: dcpassword
+      POSTGRES_DB: datacenter_ai
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dcadmin -d datacenter_ai"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
   backend:
     build:
       context: ..
@@ -8,21 +27,23 @@ services:
     container_name: dc-ai-backend
     ports:
       - "8000:8000"
-    # Read ALL environment variables from .env at project root
     env_file:
       - ../.env
     environment:
-      # Docker-only overrides — these are safe inside containers
       - BACKEND_HOST=0.0.0.0
+      - DATABASE_URL=postgresql://dcadmin:dcpassword@postgres:5432/datacenter_ai
     volumes:
-      - ../ml/artifacts:/app/ml/artifacts:ro
+      - ../ml:/app/ml:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
-      interval: 30s
+      test: ["CMD", "python", "-c", "import urllib.request; r=urllib.request.urlopen('http://localhost:8000/api/v1/health'); assert r.status==200"]
+      interval: 15s
       timeout: 10s
-      retries: 3
-      start_period: 20s
+      retries: 5
+      start_period: 30s
 
   frontend:
     build:
@@ -47,4 +68,19 @@ services:
       - frontend
     restart: unless-stopped
 
+  tests:
+    build:
+      context: ..
+      dockerfile: tests/Dockerfile
+    container_name: dc-ai-tests
+    environment:
+      - BACKEND_URL=http://backend:8000
+    depends_on:
+      backend:
+        condition: service_healthy
+    profiles:
+      - test
 
+volumes:
+  postgres_data:
+    driver: local

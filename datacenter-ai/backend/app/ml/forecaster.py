@@ -21,18 +21,29 @@ class ProphetForecaster:
 
     def _load(self) -> None:
         if not self.model_path.exists():
-            logger.warning("Prophet model not found at %s — using dummy forecaster", self.model_path)
+            logger.warning(
+                "Prophet model not found at %s — using dummy forecaster",
+                self.model_path,
+            )
             self._model = None
             return
-        self._model = joblib.load(self.model_path)
-        logger.info("Prophet model loaded from %s", self.model_path)
+        try:
+            self._model = joblib.load(self.model_path)
+            logger.info("Prophet model loaded from %s", self.model_path)
+        except Exception as e:
+            logger.warning(
+                "Prophet model failed to load from %s (%s) — using dummy forecaster",
+                self.model_path,
+                e,
+            )
+            self._model = None
 
     def predict(
         self,
         device_id: str,
         history_df: pd.DataFrame,
         horizon_min: int = 60,
-        freq: str = "5T",
+        freq: str = "5min",
     ) -> pd.DataFrame:
         """Generate future temperature forecast for a device.
 
@@ -52,16 +63,18 @@ class ProphetForecaster:
             future_ds = pd.date_range(
                 start=datetime.utcnow(), periods=horizon_min // 5, freq=freq
             )
-            return pd.DataFrame({
-                "ds": future_ds,
-                "yhat": [last_y] * len(future_ds),
-                "yhat_lower": [last_y - 0.5] * len(future_ds),
-                "yhat_upper": [last_y + 0.5] * len(future_ds),
-            })
+            return pd.DataFrame(
+                {
+                    "ds": future_ds,
+                    "yhat": [last_y] * len(future_ds),
+                    "yhat_lower": [last_y - 0.5] * len(future_ds),
+                    "yhat_upper": [last_y + 0.5] * len(future_ds),
+                }
+            )
 
         # Ensure ds column is datetime
         df = history_df.copy()
-        if not pd.api.types.is_datetime_type(df["ds"]):
+        if not pd.api.types.is_datetime64_any_dtype(df["ds"]):
             df["ds"] = pd.to_datetime(df["ds"])
 
         periods = horizon_min // 5
@@ -78,7 +91,7 @@ class ProphetForecaster:
         history_df: pd.DataFrame,
         modified_regressor: dict,  # {regressor_name: new_value}
         horizon_min: int = 60,
-        freq: str = "5T",
+        freq: str = "5min",
     ) -> pd.DataFrame:
         """Reforecast with modified cooling setpoint regressor.
 
@@ -88,7 +101,7 @@ class ProphetForecaster:
             return self.predict("whatif", history_df, horizon_min, freq)
 
         df = history_df.copy()
-        if not pd.api.types.is_datetime_type(df["ds"]):
+        if not pd.api.types.is_datetime64_any_dtype(df["ds"]):
             df["ds"] = pd.to_datetime(df["ds"])
 
         # Add modified regressor to last row to simulate the change
@@ -100,10 +113,17 @@ class ProphetForecaster:
         future = self._model.make_future_dataframe(periods=periods, freq=freq)
         # Carry last-known regressor values forward into future
         for regressor_name, new_value in modified_regressor.items():
-            if regressor_name in self._model.params.columns.get_level_values(0):
-                last_val = df[regressor_name].iloc[-1]
-                future[regressor_name] = last_val
+            try:
+                if hasattr(
+                    self._model, "params"
+                ) and regressor_name in self._model.params.columns.get_level_values(0):
+                    last_val = df[regressor_name].iloc[-1]
+                    future[regressor_name] = last_val
+            except (AttributeError, KeyError):
+                pass
 
         forecast = self._model.predict(future)
         cutoff = df["ds"].max()
-        return forecast[forecast["ds"] > cutoff][["ds", "yhat", "yhat_lower", "yhat_upper"]]
+        return forecast[forecast["ds"] > cutoff][
+            ["ds", "yhat", "yhat_lower", "yhat_upper"]
+        ]

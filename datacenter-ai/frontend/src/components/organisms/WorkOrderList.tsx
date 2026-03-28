@@ -25,7 +25,7 @@ export function WorkOrderList() {
         <WorkOrderCard
           key={wo.id}
           wo={wo}
-          onUpdateStep={(id, idx, done) => updateMutation.mutate({ id, step_index: idx })}
+          onUpdateStep={(id, idx, _done) => updateMutation.mutate({ id, step_index: idx })}
           onComplete={(id) => updateMutation.mutate({ id, status: 'completed' })}
         />
       ))}

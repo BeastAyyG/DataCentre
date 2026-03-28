@@ -15,7 +15,7 @@ const variantIcons: Record<Toast['variant'], string> = {
 function ToastItem({ toast }: { toast: Toast }) {
   return (
     <div
-      className={lex items-center gap-3 px-4 py-3 rounded-lg border shadow-lg text-sm font-medium }
+      className={`flex items-center gap-3 px-4 py-3 rounded-lg border shadow-lg ${variantStyles[toast.variant]}`}
       role="alert"
     >
       <span className="text-base">{variantIcons[toast.variant]}</span>

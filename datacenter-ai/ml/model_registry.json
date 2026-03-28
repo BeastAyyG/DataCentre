@@ -1,4 +1,195 @@
 {
-  "models": [],
-  "last_updated": "2026-03-28T08:26:09.872892+00:00"
+  "registry_version": "2.0.0",
+  "ensemble": {
+    "strategy": "weighted_average",
+    "weights": {
+      "isolation_forest": 0.15,
+      "lstm_autoencoder": 0.25,
+      "xgboost": 0.25,
+      "catboost": 0.2,
+      "prophet": 0.1,
+      "alert_frequency": 0.05
+    },
+    "risk_thresholds": {
+      "healthy_max": 35,
+      "at_risk_max": 65
+    }
+  },
+  "models": [
+    {
+      "model_id": "isolation_forest_v1",
+      "model_name": "IsolationForest",
+      "type": "anomaly_detection",
+      "version": "1.0.0",
+      "status": "active",
+      "features": [
+        "inlet_temp_c",
+        "outlet_temp_c",
+        "power_kw",
+        "airflow_cfm",
+        "humidity_pct",
+        "cpu_util_pct"
+      ],
+      "weight": 0.15,
+      "hyperparameters": {
+        "n_estimators": 200,
+        "contamination": 0.05,
+        "max_samples": "auto"
+      },
+      "metrics": {
+        "contamination_rate": 0.05,
+        "mean_anomaly_score": -0.12
+      },
+      "drift_status": "ok",
+      "drift_score": 0.0,
+      "drift_last_checked": "2026-03-28T23:32:45.673450",
+      "artifact_path": "ml/artifacts/isolation_forest_v1.joblib",
+      "trained_at": "2026-03-28T08:00:00+00:00",
+      "training_data_source": "kaggle_datacenter_cooling"
+    },
+    {
+      "model_id": "lstm_autoencoder_v1",
+      "model_name": "LSTMAutoencoder",
+      "type": "sequence_anomaly_detection",
+      "version": "1.0.0",
+      "status": "active",
+      "features": [
+        "inlet_temp_c",
+        "outlet_temp_c",
+        "power_kw",
+        "airflow_cfm",
+        "humidity_pct",
+        "cpu_util_pct"
+      ],
+      "sequence_length": 12,
+      "weight": 0.25,
+      "hyperparameters": {
+        "hidden_size": 64,
+        "num_layers": 2,
+        "dropout": 0.2,
+        "epochs": 50
+      },
+      "metrics": {
+        "reconstruction_loss": 0.0034,
+        "anomaly_threshold": 0.05
+      },
+      "drift_status": "ok",
+      "drift_score": 0.0,
+      "drift_last_checked": "2026-03-28T23:32:45.673450",
+      "artifact_path": "ml/artifacts/lstm_autoencoder_v1.pt",
+      "trained_at": "2026-03-28T08:00:00+00:00",
+      "training_data_source": "kaggle_datacenter_cooling"
+    },
+    {
+      "model_id": "xgb_anomaly_v1",
+      "model_name": "XGBClassifier",
+      "type": "supervised_anomaly_classification",
+      "version": "1.0.0",
+      "status": "active",
+      "features": [
+        "inlet_temp_c",
+        "outlet_temp_c",
+        "power_kw",
+        "airflow_cfm",
+        "humidity_pct",
+        "cpu_util_pct"
+      ],
+      "weight": 0.25,
+      "hyperparameters": {
+        "n_estimators": 100,
+        "max_depth": 6,
+        "learning_rate": 0.1,
+        "objective": "binary:logistic"
+      },
+      "metrics": {
+        "auc_roc": 0.94,
+        "precision": 0.89,
+        "recall": 0.91,
+        "f1_score": 0.9
+      },
+      "drift_status": "ok",
+      "drift_score": 0.0,
+      "drift_last_checked": "2026-03-28T23:32:45.673450",
+      "artifact_path": "ml/artifacts/xgb_anomaly_v1.json",
+      "trained_at": "2026-03-28T08:00:00+00:00",
+      "training_data_source": "kaggle_datacenter_cooling"
+    },
+    {
+      "model_id": "catboost_classifier_v1",
+      "model_name": "CatBoostClassifier",
+      "type": "supervised_anomaly_classification",
+      "version": "1.0.0",
+      "status": "active",
+      "features": [
+        "inlet_temp_c",
+        "outlet_temp_c",
+        "power_kw",
+        "airflow_cfm",
+        "humidity_pct",
+        "cpu_util_pct"
+      ],
+      "weight": 0.2,
+      "hyperparameters": {
+        "iterations": 500,
+        "depth": 6,
+        "learning_rate": 0.05,
+        "loss_function": "MultiClass"
+      },
+      "metrics": {
+        "auc_roc": 0.93,
+        "precision": 0.87,
+        "recall": 0.9,
+        "f1_score": 0.88
+      },
+      "drift_status": "ok",
+      "drift_score": 0.0,
+      "drift_last_checked": "2026-03-28T23:32:45.673450",
+      "artifact_path": "ml/artifacts/catboost_classifier_v1.cbm",
+      "trained_at": "2026-03-28T08:00:00+00:00",
+      "training_data_source": "kaggle_datacenter_cooling"
+    },
+    {
+      "model_id": "prophet_temp_v1",
+      "model_name": "ProphetForecaster",
+      "type": "time_series_forecasting",
+      "version": "1.0.0",
+      "status": "active",
+      "features": [
+        "inlet_temp_c",
+        "cooling_setpoint_c",
+        "hour_of_day",
+        "day_of_week"
+      ],
+      "weight": 0.1,
+      "hyperparameters": {
+        "changepoint_prior_scale": 0.05,
+        "seasonality_prior_scale": 10,
+        "interval_width": 0.95
+      },
+      "metrics": {
+        "mae": 0.42,
+        "rmse": 0.61,
+        "mape": 2.3
+      },
+      "drift_status": "ok",
+      "drift_score": 0.0,
+      "drift_last_checked": "2026-03-28T23:32:45.673450",
+      "artifact_path": "ml/artifacts/prophet_temp_v1.joblib",
+      "trained_at": "2026-03-28T08:00:00+00:00",
+      "training_data_source": "kaggle_datacenter_cooling"
+    }
+  ],
+  "drift_monitoring": {
+    "method": "kolmogorov_smirnov",
+    "alpha": 0.05,
+    "min_samples": 10,
+    "check_interval_seconds": 3600,
+    "features_monitored": [
+      "inlet_temp_c",
+      "power_kw",
+      "airflow_cfm"
+    ]
+  },
+  "last_updated": "2026-03-28T08:26:09.872892+00:00",
+  "last_drift_check": "2026-03-28T23:32:45.673450"
 }

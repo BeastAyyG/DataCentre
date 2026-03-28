@@ -13,7 +13,7 @@ export function useWebSocket() {
 
   const connect = useCallback(() => {
     const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = ${proto}///ws/sensors;
+    const wsUrl = `${proto}://${window.location.host}/ws/sensors`;
 
     const ws = new WebSocket(wsUrl);
     wsRef.current = ws;

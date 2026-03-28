@@ -4,10 +4,10 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import Optional
 
-from ....db.session import get_db
-from ....models.work_order import WorkOrder
-from ....models.audit_log import AuditLog
-from ....schemas.work_order import (
+from ...db.session import get_db
+from ...models.work_order import WorkOrder
+from ...models.audit_log import AuditLog
+from ...schemas.work_order import (
     WorkOrderResponse, WorkOrderCreate, WorkOrderUpdate, PaginatedWorkOrdersResponse,
 )
 

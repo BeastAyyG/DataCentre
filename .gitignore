@@ -41,6 +41,20 @@ datacenter-ai/frontend/build/
 Thumbs.db
 .verdent/
 
+# Alembic
+datacenter-ai/backend/alembic/versions/__pycache__/
+
+# PostgreSQL data (Docker)
+postgres_data/
+
+# ML model artifacts (large files)
+datacenter-ai/ml/artifacts/*.pt
+datacenter-ai/ml/artifacts/*.cbm
+datacenter-ai/ml/artifacts/*.joblib
+datacenter-ai/ml/artifacts/*.pkl
+datacenter-ai/ml/artifacts/*.json
+!datacenter-ai/ml/model_registry.json
+
 # ML artifacts (optional: these are included for cross-computer work)
 # datacenter-ai/ml/artifacts/*.joblib
 # datacenter-ai/ml/artifacts/*.pkl

@@ -2,7 +2,7 @@ import asyncio
 import logging
 import random
 import pandas as pd
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Optional
 
@@ -22,14 +22,38 @@ class SensorSimulator:
 
     # Default device configs for when no CSV is available
     DEFAULT_DEVICES = [
-        {"id": "RACK-A1", "name": "Rack A1", "type": "rack", "zone": "row-A", "rack_position": "A1"},
-        {"id": "RACK-A2", "name": "Rack A2", "type": "rack", "zone": "row-A", "rack_position": "A2"},
-        {"id": "RACK-B1", "name": "Rack B1", "type": "rack", "zone": "row-B", "rack_position": "B1"},
-        {"id": "RACK-B2", "name": "Rack B2", "type": "rack", "zone": "row-B", "rack_position": "B2"},
-        {"id": "CRAC-1",  "name": "CRAC Unit 1",  "type": "crac", "zone": "hot-aisle-1"},
-        {"id": "CRAC-2",  "name": "CRAC Unit 2",  "type": "crac", "zone": "hot-aisle-2"},
-        {"id": "PDU-1",   "name": "PDU 1",   "type": "pdu",  "zone": "row-A"},
-        {"id": "PDU-2",   "name": "PDU 2",   "type": "pdu",  "zone": "row-B"},
+        {
+            "id": "RACK-A1",
+            "name": "Rack A1",
+            "type": "rack",
+            "zone": "row-A",
+            "rack_position": "A1",
+        },
+        {
+            "id": "RACK-A2",
+            "name": "Rack A2",
+            "type": "rack",
+            "zone": "row-A",
+            "rack_position": "A2",
+        },
+        {
+            "id": "RACK-B1",
+            "name": "Rack B1",
+            "type": "rack",
+            "zone": "row-B",
+            "rack_position": "B1",
+        },
+        {
+            "id": "RACK-B2",
+            "name": "Rack B2",
+            "type": "rack",
+            "zone": "row-B",
+            "rack_position": "B2",
+        },
+        {"id": "CRAC-1", "name": "CRAC Unit 1", "type": "crac", "zone": "hot-aisle-1"},
+        {"id": "CRAC-2", "name": "CRAC Unit 2", "type": "crac", "zone": "hot-aisle-2"},
+        {"id": "PDU-1", "name": "PDU 1", "type": "pdu", "zone": "row-A"},
+        {"id": "PDU-2", "name": "PDU 2", "type": "pdu", "zone": "row-B"},
     ]
 
     def __init__(self, interval_sec: float = 2.0, speed: float = 1.0):
@@ -48,7 +72,11 @@ class SensorSimulator:
             return
         self._running = True
         self._task = asyncio.create_task(self._run_loop())
-        logger.info("SensorSimulator started (speed=%.1f, interval=%.1fs)", self.speed, self.interval_sec)
+        logger.info(
+            "SensorSimulator started (speed=%.1f, interval=%.1fs)",
+            self.speed,
+            self.interval_sec,
+        )
 
     async def stop(self) -> None:
         self._running = False
@@ -70,7 +98,9 @@ class SensorSimulator:
         self._df = pd.read_csv(path)
         # Normalise timestamp column
         ts_col = "timestamp" if "timestamp" in self._df.columns else self._df.columns[0]
-        self._df["timestamp"] = pd.to_datetime(self._df.get("timestamp", self._df.index))
+        self._df["timestamp"] = pd.to_datetime(
+            self._df.get("timestamp", self._df.index)
+        )
         logger.info("Loaded %d rows from %s", len(self._df), path)
 
     # ── Core loop ──────────────────────────────────────────────────────────
@@ -85,7 +115,7 @@ class SensorSimulator:
 
     def _next_reading(self, device: dict) -> SensorReading:
         """Generate the next sensor reading for a device (from CSV or synthetic)."""
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         self._last_ts = now
 
         if self._df is not None and len(self._df) > 0:
@@ -95,13 +125,16 @@ class SensorSimulator:
                 device_id=device["id"],
                 timestamp=now,
                 inlet_temp_c=float(row.get("inlet_temp_c", 22)) + random.gauss(0, 0.2),
-                outlet_temp_c=float(row.get("outlet_temp_c", 24)) + random.gauss(0, 0.2),
+                outlet_temp_c=float(row.get("outlet_temp_c", 24))
+                + random.gauss(0, 0.2),
                 power_kw=float(row.get("power_kw", 8)) + random.gauss(0, 0.5),
-                cooling_output_kw=float(row.get("cooling_output_kw", 3)) + random.gauss(0, 0.2),
+                cooling_output_kw=float(row.get("cooling_output_kw", 3))
+                + random.gauss(0, 0.2),
                 airflow_cfm=float(row.get("airflow_cfm", 600)) + random.gauss(0, 10),
                 humidity_pct=float(row.get("humidity_pct", 45)) + random.gauss(0, 1),
                 cpu_util_pct=float(row.get("cpu_util_pct", 60)) + random.gauss(0, 2),
-                network_bps=int(row.get("network_bps", 1000000)) + int(random.gauss(0, 10000)),
+                network_bps=int(row.get("network_bps", 1000000))
+                + int(random.gauss(0, 10000)),
                 pue_instant=float(row.get("pue_instant", 1.4)) + random.gauss(0, 0.02),
             )
 
@@ -124,8 +157,12 @@ class SensorSimulator:
                 airflow_cfm=round(600 + 200 * base_load + random.gauss(0, 10), 0),
                 humidity_pct=round(45 + random.gauss(0, 1), 1),
                 cpu_util_pct=round(50 + 30 * base_load + random.gauss(0, 2), 1),
-                network_bps=int(1_000_000 + 500_000 * base_load + random.gauss(0, 10000)),
-                pue_instant=round(1.4 + 0.2 * (1 - base_load) + random.gauss(0, 0.01), 3),
+                network_bps=int(
+                    1_000_000 + 500_000 * base_load + random.gauss(0, 10000)
+                ),
+                pue_instant=round(
+                    1.4 + 0.2 * (1 - base_load) + random.gauss(0, 0.01), 3
+                ),
             )
         elif device["type"] == "crac":
             inlet = 22 + 3 * base_load + random.gauss(0, 0.3)
@@ -140,7 +177,9 @@ class SensorSimulator:
                 humidity_pct=round(43 + random.gauss(0, 0.5), 1),
                 cpu_util_pct=round(40 + 20 * base_load + random.gauss(0, 2), 1),
                 network_bps=int(200_000 + random.gauss(0, 5000)),
-                pue_instant=round(1.3 + 0.1 * (1 - base_load) + random.gauss(0, 0.01), 3),
+                pue_instant=round(
+                    1.3 + 0.1 * (1 - base_load) + random.gauss(0, 0.01), 3
+                ),
             )
         else:  # pdu, network
             return SensorReading(
@@ -153,6 +192,8 @@ class SensorSimulator:
                 airflow_cfm=round(100 + random.gauss(0, 5), 0),
                 humidity_pct=round(45 + random.gauss(0, 0.5), 1),
                 cpu_util_pct=round(20 + random.gauss(0, 2), 1),
-                network_bps=int(2_000_000 + 1_000_000 * base_load + random.gauss(0, 20000)),
+                network_bps=int(
+                    2_000_000 + 1_000_000 * base_load + random.gauss(0, 20000)
+                ),
                 pue_instant=round(1.5 + 0.1 * random.gauss(0, 0.05), 3),
             )

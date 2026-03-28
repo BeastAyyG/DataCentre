@@ -30,6 +30,45 @@ _ACTION_TEMPLATES = {
     ],
 }
 
+# Cyber action templates mapped by threat type
+_CYBER_ACTION_TEMPLATES = {
+    "ddos": [
+        "Block source IPs at firewall and enable rate limiting",
+        "Activate DDoS mitigation service",
+        "Scale network capacity to absorb traffic spike",
+    ],
+    "intrusion": [
+        "Isolate affected systems and force password reset",
+        "Review and block suspicious IP addresses",
+        "Enable enhanced monitoring on affected accounts",
+    ],
+    "ransomware": [
+        "Immediately isolate infected systems",
+        "Initiate backup restoration protocol",
+        "Notify security operations center",
+    ],
+    "port_scan": [
+        "Block source IP at firewall",
+        "Enable IDS/IPS alerts for targeted ports",
+        "Review firewall rules for unused ports",
+    ],
+    "exfiltration": [
+        "Block external data connections immediately",
+        "Investigate data loss scope",
+        "Notify data protection officer",
+    ],
+    "compromise": [
+        "Isolate all affected systems immediately",
+        "Begin incident response protocol",
+        "Preserve evidence for forensic analysis",
+    ],
+    "default": [
+        "Investigate the security incident",
+        "Isolate affected systems",
+        "Notify security operations center",
+    ],
+}
+
 
 class AlertConsumer:
     """EventBus subscriber — creates AnomalyAlert rows when RiskScorer emits critical/at-risk events."""
@@ -40,6 +79,9 @@ class AlertConsumer:
     async def on_device_risk(self, event: DeviceRiskEvent) -> None:
         try:
             with get_db_context() as db:
+                # Check if there's a cyber anomaly contributing factor
+                is_cyber = event.contributing_factors.get("cyber_anomaly", False)
+
                 # Only alert for at_risk or critical
                 if event.risk_label == "healthy":
                     return
@@ -61,36 +103,68 @@ class AlertConsumer:
                     db.commit()
                     return
 
-                # Determine affected metric
+                # Determine affected metric and action
                 cf = event.contributing_factors
-                if cf.get("anomaly_confidence", 0) > cf.get("forecast_deviation", 0):
-                    metric = "inlet_temp_c"
+
+                if is_cyber:
+                    # Cyber threat handling
+                    threat_type = cf.get("threat_type", "default")
+                    templates = _CYBER_ACTION_TEMPLATES.get(
+                        threat_type, _CYBER_ACTION_TEMPLATES["default"]
+                    )
+                    action = templates[0].format(device_id=event.device_id)
+
+                    reason = (
+                        f"CYBER THREAT DETECTED: {threat_type.upper()} attack detected. "
+                        f"Risk score {event.risk_score:.1f}/100 ({event.risk_label}). "
+                        f"AI confidence: {cf.get('cyber_score', event.anomaly_score * 100):.1f}%. "
+                        f"Immediate action required to prevent data breach or service disruption."
+                    )
+                    impact = (
+                        f"Critical: {threat_type.upper()} attack in progress. "
+                        f"Potential data loss, service outage, or compliance violation. "
+                        f"Estimated impact: ${event.risk_score * 100:.0f} per minute if unresolved."
+                    )
+                    severity = "critical"
+                    affected_metric = "cyber_threat"
                 else:
-                    metric = "power_kw"
+                    # Standard thermal/environmental handling
+                    if cf.get("anomaly_confidence", 0) > cf.get(
+                        "forecast_deviation", 0
+                    ):
+                        metric = "inlet_temp_c"
+                    else:
+                        metric = "power_kw"
 
-                templates = _ACTION_TEMPLATES.get(metric, _ACTION_TEMPLATES["default"])
-                action = templates[0].format(device_id=event.device_id)
+                    templates = _ACTION_TEMPLATES.get(
+                        metric, _ACTION_TEMPLATES["default"]
+                    )
+                    action = templates[0].format(device_id=event.device_id)
 
-                reason = (
-                    f"Risk score {event.risk_score:.1f}/100 ({event.risk_label}) driven by "
-                    f"anomaly_confidence={event.contributing_factors.get('anomaly_confidence', 0):.3f}, "
-                    f"forecast_deviation={event.contributing_factors.get('forecast_deviation', 0):.3f}. "
-                    f"Recommend immediate inspection of {metric}."
-                )
-                impact = (
-                    f"Estimated {event.risk_score * 0.5:.0f} minutes downtime if unresolved. "
-                    f"Energy inefficiency of ~{event.risk_score * 0.1:.1f}% above baseline."
-                )
+                    reason = (
+                        f"Risk score {event.risk_score:.1f}/100 ({event.risk_label}) driven by "
+                        f"anomaly_confidence={event.contributing_factors.get('anomaly_confidence', 0):.3f}, "
+                        f"forecast_deviation={event.contributing_factors.get('forecast_deviation', 0):.3f}. "
+                        f"Recommend immediate inspection of {metric}."
+                    )
+                    impact = (
+                        f"Estimated {event.risk_score * 0.5:.0f} minutes downtime if unresolved. "
+                        f"Energy inefficiency of ~{event.risk_score * 0.1:.1f}% above baseline."
+                    )
+                    severity = (
+                        "critical" if event.risk_label == "critical" else "warning"
+                    )
+                    affected_metric = metric
 
                 alert = AnomalyAlert(
                     id=str(uuid.uuid4()),
                     device_id=event.device_id,
-                    severity="critical" if event.risk_label == "critical" else "warning",
+                    severity=severity,
                     status="open",
                     anomaly_score=event.anomaly_score,
                     forecast_deviation=event.forecast_deviation,
                     risk_score=event.risk_score,
-                    affected_metric=metric,
+                    affected_metric=affected_metric,
                     reason=reason,
                     impact_estimate=impact,
                     recommended_action=action,
@@ -100,8 +174,12 @@ class AlertConsumer:
                 db.commit()
 
                 logger.info(
-                    "Alert created: %s for device %s (severity=%s, risk=%.1f)",
-                    alert.id, event.device_id, alert.severity, event.risk_score,
+                    "Alert created: %s for device %s (severity=%s, risk=%.1f, cyber=%s)",
+                    alert.id,
+                    event.device_id,
+                    alert.severity,
+                    event.risk_score,
+                    is_cyber,
                 )
 
                 # Push WebSocket notification

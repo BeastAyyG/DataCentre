@@ -1,6 +1,7 @@
 // ── Device ────────────────────────────────────────────────────────────────────
 export interface Device {
   id: string;
+  datacenter_id: string;
   name: string;
   type: 'rack' | 'pdu' | 'crac' | 'sensor' | 'network';
   zone?: string;

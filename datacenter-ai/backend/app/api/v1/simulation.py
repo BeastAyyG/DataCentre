@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
-from ....ml.ml_service import ml_service
-from ....schemas.simulation import SimulationRequest, SimulationResult
+from ...ml.ml_service import ml_service
+from ...schemas.simulation import SimulationRequest, SimulationResult
 
 router = APIRouter()
 

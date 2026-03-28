@@ -4,14 +4,18 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
-from ....db.session import get_db
-from ....models.anomaly_alert import AnomalyAlert
-from ....models.audit_log import AuditLog
-from ....schemas.alert import (
-    AlertResponse, AlertAcknowledgeRequest, AlertAcceptRequest,
-    AlertRejectRequest, PaginatedAlertsResponse,
+from ...db.session import get_db
+from ...models.anomaly_alert import AnomalyAlert
+from ...models.audit_log import AuditLog
+from ...schemas.alert import (
+    AlertResponse,
+    AlertAcknowledgeRequest,
+    AlertAcceptRequest,
+    AlertRejectRequest,
+    PaginatedAlertsResponse,
 )
-from ....services.work_order_service import work_order_service
+from ...services.work_order_service import work_order_service
+from ...schemas.work_order import WorkOrderResponse
 
 router = APIRouter()
 
@@ -55,7 +59,12 @@ async def list_alerts(
     total = query.count()
     pages = (total + limit - 1) // limit
     offset = (page - 1) * limit
-    alerts = query.order_by(AnomalyAlert.triggered_at.desc()).offset(offset).limit(limit).all()
+    alerts = (
+        query.order_by(AnomalyAlert.triggered_at.desc())
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
     return PaginatedAlertsResponse(
         items=[_alert_to_response(a) for a in alerts],
         total=total,
@@ -110,7 +119,10 @@ async def accept_alert(
     db.add(audit)
     db.commit()
 
-    return {"work_order": wo, "alert": _alert_to_response(alert)}
+    return {
+        "work_order": WorkOrderResponse.model_validate(wo),
+        "alert": _alert_to_response(alert),
+    }
 
 
 @router.post("/alerts/{alert_id}/reject", response_model=dict)

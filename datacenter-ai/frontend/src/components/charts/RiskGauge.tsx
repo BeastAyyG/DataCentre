@@ -1,5 +1,3 @@
-import { useMemo } from 'react';
-
 interface RiskGaugeProps {
   score: number;  // 0-100
   size?: number;
@@ -34,11 +32,11 @@ export function RiskGauge({ score, size = 64 }: RiskGaugeProps) {
           strokeWidth="5" strokeDasharray={circumference}
           strokeDashoffset={dashOffset} strokeLinecap="round"
           transform="rotate(-90 32 32)"
-          style={{ transition: 'stroke-dashoffset 0.5s ease' }}
+          style={{ transition: 'stroke-dashoffset 0.5s ease, stroke 0.35s ease' }}
         />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">
-        <span className="text-xs font-bold" style={{ color }}>{score.toFixed(0)}</span>
+        <span className="text-xs font-bold font-mono" style={{ color }}>{score.toFixed(0)}</span>
       </div>
     </div>
   );

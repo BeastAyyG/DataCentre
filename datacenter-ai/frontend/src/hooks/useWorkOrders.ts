@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiWorkOrders } from '@/api/client';
 import { useWorkOrderStore } from '@/store/useWorkOrderStore';
@@ -5,12 +6,15 @@ import { toast } from '@/hooks/useToast';
 
 export function useWorkOrders(params?: { status?: string; page?: number; limit?: number }) {
   const setWorkOrders = useWorkOrderStore((s) => s.setWorkOrders);
-  return useQuery({
+  const query = useQuery({
     queryKey: ['work-orders', params],
     queryFn: () => apiWorkOrders.list(params),
     refetchInterval: 30_000,
-    onSuccess: (data) => setWorkOrders(data.items),
   });
+  useEffect(() => {
+    if (query.data) setWorkOrders(query.data.items);
+  }, [query.data, setWorkOrders]);
+  return query;
 }
 
 export function useUpdateWorkOrder() {
@@ -20,7 +24,7 @@ export function useUpdateWorkOrder() {
       apiWorkOrders.update(id, body),
     onSuccess: (data) => {
       if (data.status === 'completed') {
-        toast.success(Work order completed! Saved ~{data.estimated_saving_usd?.toFixed(0) ?? '—'});
+        toast.success(`Work order completed! Saved ~$${data.estimated_saving_usd}`)
       } else {
         toast.success('Work order updated');
       }

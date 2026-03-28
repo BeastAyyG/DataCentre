@@ -3,12 +3,26 @@ from pathlib import Path
 import os
 
 
+def _find_env_file() -> str:
+    """Locate .env file in the project root (datacenter-ai/)."""
+    candidates = [
+        Path(__file__).resolve().parents[2] / ".env",  # datacenter-ai/.env
+        Path(__file__).resolve().parents[3] / ".env",  # project root .env
+        Path(".env"),  # CWD
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            return str(candidate)
+    return ".env"
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=_find_env_file(),
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",
+        protected_namespaces=("settings_",),
     )
 
     # App
@@ -16,8 +30,8 @@ class Settings(BaseSettings):
     debug: bool = True
     secret_key: str = "change-me-in-production"
 
-    # Database
-    database_url: str = "sqlite:///./datacenter.db"
+    # Database - PostgreSQL by default (industry standard)
+    database_url: str = "postgresql://dcadmin:dcpassword@localhost:5432/datacenter_ai"
 
     # ML
     model_artifacts_path: Path = Path("ml/artifacts")
@@ -42,6 +56,22 @@ class Settings(BaseSettings):
     backend_host: str = "0.0.0.0"
     backend_port: int = 8000
     frontend_url: str = "http://localhost:3000"
+
+    # Authentication
+    jwt_algorithm: str = "HS256"
+    access_token_expire_minutes: int = 60
+    refresh_token_expire_days: int = 7
+
+    # CORS - comma-separated origins
+    cors_origins: str = "http://localhost:3000,http://localhost:5173"
+
+    # Observability
+    log_level: str = "INFO"
+    log_format: str = "json"  # json | plain
+    enable_metrics: bool = True
+
+    # Multi-datacenter
+    default_datacenter_id: str = "dc-primary"
 
     @property
     def artifacts_dir(self) -> Path:

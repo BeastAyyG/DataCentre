@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -41,7 +40,7 @@ export function WorkOrderCard({ wo, onUpdateStep, onComplete }: WorkOrderCardPro
           <div className="w-full bg-slate-700 rounded-full h-1.5">
             <div
               className="bg-green-500 h-1.5 rounded-full transition-all"
-              style={{ width: ${(completedSteps / steps.length) * 100}% }}
+              style={{ width: `${(completedSteps / steps.length) * 100}%` }}
             />
           </div>
           <div className="mt-2 space-y-1">

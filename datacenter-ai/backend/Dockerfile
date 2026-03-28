@@ -1,4 +1,4 @@
-﻿FROM python:3.11-slim
+FROM python:3.11-slim
 
 WORKDIR /app
 
@@ -15,7 +15,7 @@ COPY backend/app/ ./app/
 
 # Copy ML artifacts (copy from ml/artifacts in monorepo root)
 COPY ml/artifacts/ ./ml/artifacts/
-COPY ml/model_registry.json ./ml/ 2>/dev/null || true
+COPY ml/model_registry.json ./ml/model_registry.json
 
 # Create ml/data/raw dir (even if empty)
 RUN mkdir -p ml/data/raw

@@ -19,7 +19,9 @@ class DriftMonitor:
     def __init__(
         self,
         registry_path: Path,
-        baseline_data: Optional[Dict[str, np.ndarray]] = None,  # {feature_name: baseline_values}
+        baseline_data: Optional[
+            Dict[str, np.ndarray]
+        ] = None,  # {feature_name: baseline_values}
         ks_alpha: float = 0.05,
     ):
         self.registry_path = Path(registry_path)
@@ -52,6 +54,8 @@ class DriftMonitor:
 
         Returns a dict of {model_id: {drift_detected, drift_score, status}}.
         """
+        # Reload registry each time to pick up any external changes
+        self._load_registry()
         results = {}
 
         for model_entry in self.registry.get("models", []):
@@ -81,7 +85,10 @@ class DriftMonitor:
                     model_drift_detected = True
                     logger.warning(
                         "Drift detected in model %s feature '%s': ks=%.3f p=%.4f",
-                        model_id, feature, stat, p_value,
+                        model_id,
+                        feature,
+                        stat,
+                        p_value,
                     )
 
             status = "drift" if model_drift_detected else "ok"

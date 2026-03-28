@@ -7,12 +7,13 @@ from ..core.event_types import SensorEvent
 from ..db.session import get_db_context
 from ..models.sensor_reading import SensorReading
 from ..models.device import Device
+from ..config import settings
 
 logger = logging.getLogger(__name__)
 
 
 class PersistenceConsumer:
-    """EventBus subscriber — persists every SensorEvent to SQLite."""
+    """EventBus subscriber — persists every SensorEvent to the database."""
 
     def __init__(self):
         event_bus.subscribe("SensorEvent", self.on_sensor_event)
@@ -26,6 +27,7 @@ class PersistenceConsumer:
                 if dev is None:
                     dev = Device(
                         id=reading.device_id,
+                        datacenter_id=settings.default_datacenter_id,
                         name=reading.device_id,
                         type="rack",
                         zone="default",
@@ -33,26 +35,31 @@ class PersistenceConsumer:
                     db.add(dev)
                     db.flush()
 
-                db.add(SensorReading(
-                    device_id=reading.device_id,
-                    timestamp=reading.timestamp,
-                    inlet_temp_c=reading.inlet_temp_c,
-                    outlet_temp_c=reading.outlet_temp_c,
-                    power_kw=reading.power_kw,
-                    cooling_output_kw=reading.cooling_output_kw,
-                    airflow_cfm=reading.airflow_cfm,
-                    humidity_pct=reading.humidity_pct,
-                    cpu_util_pct=reading.cpu_util_pct,
-                    network_bps=reading.network_bps,
-                    pue_instant=reading.pue_instant,
-                    raw_json=json.dumps({
-                        "inlet_temp_c": reading.inlet_temp_c,
-                        "power_kw": reading.power_kw,
-                    }, default=str),
-                ))
+                db.add(
+                    SensorReading(
+                        device_id=reading.device_id,
+                        timestamp=reading.timestamp,
+                        inlet_temp_c=reading.inlet_temp_c,
+                        outlet_temp_c=reading.outlet_temp_c,
+                        power_kw=reading.power_kw,
+                        cooling_output_kw=reading.cooling_output_kw,
+                        airflow_cfm=reading.airflow_cfm,
+                        humidity_pct=reading.humidity_pct,
+                        cpu_util_pct=reading.cpu_util_pct,
+                        network_bps=reading.network_bps,
+                        pue_instant=reading.pue_instant,
+                        raw_json=json.dumps(
+                            {
+                                "inlet_temp_c": reading.inlet_temp_c,
+                                "power_kw": reading.power_kw,
+                            },
+                            default=str,
+                        ),
+                    )
+                )
                 db.commit()
         except Exception as e:
-            logger.error("PersistenceConsumer error: %s", e)
+            logger.error("persistence_consumer_error", error=str(e))
 
 
 persistence_consumer = PersistenceConsumer()

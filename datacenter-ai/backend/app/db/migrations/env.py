@@ -15,10 +15,14 @@ from app.models.anomaly_alert import AnomalyAlert
 from app.models.work_order import WorkOrder
 from app.models.audit_log import AuditLog
 from app.models.kpi_snapshot import KPISnapshot
+from app.models.cyber_threat import CyberThreatEvent
 
 config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
+
+from app.config import settings
+config.set_main_option("sqlalchemy.url", settings.database_url)
 
 target_metadata = Base.metadata
 

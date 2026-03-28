@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiAlerts } from '@/api/client';
 import { useAlertStore } from '@/store/useAlertStore';
@@ -6,12 +7,15 @@ import { toast } from '@/hooks/useToast';
 
 export function useAlerts(params?: { status?: string; severity?: string; page?: number; limit?: number }) {
   const setAlerts = useAlertStore((s) => s.setAlerts);
-  return useQuery({
+  const query = useQuery({
     queryKey: ['alerts', params],
     queryFn: () => apiAlerts.list(params),
     refetchInterval: 30_000,
-    onSuccess: (data) => setAlerts(data.items),
   });
+  useEffect(() => {
+    if (query.data) setAlerts(query.data.items);
+  }, [query.data, setAlerts]);
+  return query;
 }
 
 export function useAcceptAlert() {

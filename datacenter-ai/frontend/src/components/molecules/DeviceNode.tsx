@@ -1,31 +1,32 @@
 import { Badge } from '@/components/ui/Badge';
 import { RiskGauge } from '@/components/charts/RiskGauge';
-import type { Device } from '@/types';
+import type { Device, SensorReading } from '@/types';
 
 interface DeviceNodeProps {
   device: Device;
-  sensorData?: Record<string, number>;
+  sensorData?: SensorReading;
   onClick?: () => void;
 }
 
 export function DeviceNode({ device, sensorData, onClick }: DeviceNodeProps) {
   const statusVariant = device.status === 'healthy' ? 'healthy' : device.status === 'at_risk' ? 'at_risk' : device.status === 'critical' ? 'critical' : 'default';
+  const criticalGlow = device.status === 'critical' ? 'neon-edge-critical' : '';
 
   return (
     <div
-      className={g-slate-800 border-2 rounded-lg p-3 cursor-pointer hover:bg-slate-700 transition }
+      className={`panel-surface border-2 border-obsidian-600 rounded-[2px] p-3 cursor-pointer hover:bg-obsidian-700/80 hover:border-cyber-500/55 transition ${criticalGlow}`}
       onClick={onClick}
     >
       <div className="flex items-center justify-between mb-2">
         <div>
           <p className="text-sm font-semibold text-white">{device.name}</p>
-          <p className="text-xs text-slate-500">{device.id}</p>
+          <p className="text-[10px] text-slate-500 font-mono">{device.id}</p>
         </div>
         <RiskGauge score={device.current_risk_score} size={48} />
       </div>
       <div className="flex items-center gap-2 mb-1">
         <Badge variant={statusVariant}>{device.status}</Badge>
-        {device.zone && <span className="text-xs text-slate-500">{device.zone}</span>}
+        {device.zone && <span className="text-[10px] text-slate-500 uppercase tracking-[0.08em]">{device.zone}</span>}
       </div>
       {sensorData && (
         <div className="grid grid-cols-2 gap-1 mt-2 text-xs">

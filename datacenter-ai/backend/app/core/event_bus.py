@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from typing import Callable, Dict, List, Any
+from typing import Callable, Dict, List, Any, Optional
 from collections import defaultdict
 
 from .event_types import (
@@ -33,7 +33,9 @@ class EventBus:
         try:
             self._queue.put_nowait(event)
         except asyncio.QueueFull:
-            logger.warning("EventBus queue full, dropping event: %s", type(event).__name__)
+            logger.warning(
+                "EventBus queue full, dropping event: %s", type(event).__name__
+            )
 
     # ── Subscriber API ────────────────────────────────────────────────────────
 
@@ -91,7 +93,9 @@ class EventBus:
                 except Exception as e:
                     logger.error(
                         "EventBus handler error for %s (%s): %s",
-                        event_type, handler.__name__, e,
+                        event_type,
+                        handler.__name__,
+                        e,
                     )
 
 

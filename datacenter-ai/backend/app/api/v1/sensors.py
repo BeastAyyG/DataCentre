@@ -3,9 +3,9 @@ from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 from typing import List, Optional
 
-from ....db.session import get_db
-from ....models.sensor_reading import SensorReading
-from ....schemas.sensor import SensorReadingResponse, SensorLatestResponse
+from ...db.session import get_db
+from ...models.sensor_reading import SensorReading
+from ...schemas.sensor import SensorReadingResponse, SensorLatestResponse
 
 router = APIRouter()
 

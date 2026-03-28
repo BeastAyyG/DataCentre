@@ -48,7 +48,7 @@ export function SimulationPanel() {
             <div className="bg-slate-900 rounded p-3 border border-slate-700">
               <p className="text-slate-500 text-xs mb-1">Annual Cost Saving</p>
               <p className="text-green-400 font-bold text-lg">
-                
+                ${result.estimated_annual_cost_saving_usd.toLocaleString()}
               </p>
               <p className="text-slate-400 text-xs">per year</p>
             </div>

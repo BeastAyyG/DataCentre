@@ -47,7 +47,7 @@ export function KPIStrip() {
       <MetricCard
         label="Active Alerts"
         value={kpi.active_critical_alerts + kpi.active_warning_alerts}
-        sublabel={${kpi.active_critical_alerts} critical ·  warning}
+        sublabel={`${kpi.active_critical_alerts} critical · ${kpi.active_warning_alerts} warning`}
       />
     </div>
   );

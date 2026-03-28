@@ -55,3 +55,29 @@ class ActionEvent:
     actor: str
     reason: Optional[str] = None
     published_at: datetime = field(default_factory=datetime.utcnow)
+
+
+@dataclass
+class CyberIndicatorEvent:
+    scenario_id: str
+    threat_type: str
+    indicator_type: str
+    value: float
+    threshold: float
+    triggered: bool
+    phase: str
+    published_at: datetime = field(default_factory=datetime.utcnow)
+
+
+@dataclass
+class CyberThreatDetectedEvent:
+    scenario_id: str
+    threat_type: str
+    threat_name: str
+    severity: str
+    target_device_id: str
+    source_ip: str
+    confidence: float
+    recommended_action: str
+    detection_latency_sec: float
+    published_at: datetime = field(default_factory=datetime.utcnow)

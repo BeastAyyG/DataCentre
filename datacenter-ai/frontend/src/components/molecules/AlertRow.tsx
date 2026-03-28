@@ -16,7 +16,7 @@ export function AlertRow({ alert, onAccept, onReject, loading }: AlertRowProps) 
   const [rejectReason, setRejectReason] = useState('');
 
   return (
-    <div className={order rounded-lg p-4 mb-3 }>
+    <div className={`border border-slate-700 rounded-lg p-4 mb-3 bg-slate-800 ${alert.severity === 'critical' ? 'border-red-500 bg-red-950/20' : ''}`}>
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">

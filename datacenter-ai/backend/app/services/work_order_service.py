@@ -3,7 +3,7 @@ import logging
 from datetime import datetime
 from typing import Optional
 
-from ..db.session import get_db_context
+from ..db.session import get_db_context, SessionLocal
 from ..models.anomaly_alert import AnomalyAlert
 from ..models.work_order import WorkOrder
 from ..models.audit_log import AuditLog
@@ -31,21 +31,39 @@ class WorkOrderService:
         """Create a WorkOrder from an accepted anomaly alert."""
         steps = _DEFAULT_STEPS.copy()
         if "CRAC" in alert.device_id or "cooling" in (alert.reason or "").lower():
-            steps.insert(0, {"step": 1, "description": "Check refrigerant levels and compressor status", "done": False})
-            steps.insert(1, {"step": 2, "description": "Inspect fans and filters for blockage", "done": False})
+            steps.insert(
+                0,
+                {
+                    "step": 1,
+                    "description": "Check refrigerant levels and compressor status",
+                    "done": False,
+                },
+            )
+            steps.insert(
+                1,
+                {
+                    "step": 2,
+                    "description": "Inspect fans and filters for blockage",
+                    "done": False,
+                },
+            )
             for i, s in enumerate(steps):
                 s["step"] = i + 1
 
         priority_map = {"critical": "high", "warning": "medium"}
         priority = priority_map.get(alert.severity, "medium")
 
-        title = f"{alert.severity.upper()}: {alert.recommended_action or 'Resolve anomaly'}"
+        title = (
+            f"{alert.severity.upper()}: {alert.recommended_action or 'Resolve anomaly'}"
+        )
         if alert.device_id:
             title = f"{title} [{alert.device_id}]"
 
         with get_db_context() as db:
             # Reload alert in this session
-            db_alert = db.query(AnomalyAlert).filter(AnomalyAlert.id == alert.id).first()
+            db_alert = (
+                db.query(AnomalyAlert).filter(AnomalyAlert.id == alert.id).first()
+            )
             if db_alert:
                 db_alert.status = "acknowledged"
                 db_alert.acknowledged_by = actor
@@ -71,12 +89,14 @@ class WorkOrderService:
                 actor=actor,
                 alert_id=alert.id,
                 work_order_id=wo.id,
-                payload_json=json.dumps({
-                    "alert_id": alert.id,
-                    "device_id": alert.device_id,
-                    "risk_score": alert.risk_score,
-                    "priority": priority,
-                }),
+                payload_json=json.dumps(
+                    {
+                        "alert_id": alert.id,
+                        "device_id": alert.device_id,
+                        "risk_score": alert.risk_score,
+                        "priority": priority,
+                    }
+                ),
             )
             db.add(audit)
             db.commit()
@@ -85,12 +105,13 @@ class WorkOrderService:
             return wo
 
     @staticmethod
-    def update_step(wo_id: str, step_index: int, done: bool, db=None) -> Optional[WorkOrder]:
+    def update_step(
+        wo_id: str, step_index: int, done: bool, db=None
+    ) -> Optional[WorkOrder]:
         """Mark a step as done or undone."""
-        close = db
-        if db is None:
-            close = True
-            db = next(get_db_context().__enter__())
+        close = db is None
+        if close:
+            db = SessionLocal()
         try:
             wo = db.query(WorkOrder).filter(WorkOrder.id == wo_id).first()
             if not wo:
